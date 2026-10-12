@@ -1,0 +1,351 @@
+<!--
+BLUEPRINT LANDING SECTION — paste into a Carrd Code embed (visible, not hidden).
+
+The rest of your page keeps its own colour. This section fades from the page
+into blueprint blue (#2C5799) with a white grid, then fades back out below it.
+
+HOW TO USE YOUR OWN DRAWING
+1. Replace the demo <svg id="bpl-svg" class="demo" ...> ... </svg> with yours.
+2. Keep id="bpl-svg", delete class="demo", and delete any width="" / height=""
+on the <svg> tag (keep its viewBox).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lilex:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+.bpl{
+--blue:#2C5799; --white:#FFFFFF; --line:#FFFFFF; --mute:rgba(255,255,255,.66);
+--grid-size:72px; /* grid cell size: match your other pages */
+--grid-opacity:.8; /* set to 0 if your page grid already continues through this section */
+--fade:160px; /* length of the blend from the page into blue (like your other pages) */
+--fade-out:160px; /* blend out at the bottom edge into the next section; 0 = hard edge */
+position:relative; isolation:isolate;
+width:100vw; max-width:none; left:50%; margin-left:-50vw; margin-right:-50vw;
+/* a short blend from the page into blueprint blue, then solid blue */
+background:linear-gradient(180deg, transparent 0, var(--blue) var(--fade), var(--blue) calc(100% - var(--fade-out)), transparent 100%);
+color:var(--white);
+font-family:'Lilex',ui-monospace,Menlo,Consolas,monospace;
+box-sizing:border-box; text-align:left;
+}
+.bpl *{box-sizing:border-box}
+
+/* Everything that is "fixed" lives in this layer, which is clipped to the section,
+so nothing here can ever spill over the rest of your page. */
+.bpl-clip{
+position:absolute; top:0; left:0; right:0; bottom:0;
+clip-path:inset(0); pointer-events:none; z-index:0;
+/* same blend as the background, so the fixed grid and drawing fade in together with the blue */
+-webkit-mask-image:linear-gradient(180deg, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade-out)), transparent 100%);
+mask-image:linear-gradient(180deg, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade-out)), transparent 100%);
+}
+
+/* ---------- white grid: fixed in place while the page scrolls past ---------- */
+.bpl-grid{
+position:fixed; top:0; left:0; width:100vw; height:100vh;
+background-image:linear-gradient(#FFFFFF 1px,transparent 1px),linear-gradient(90deg,#FFFFFF 1px,transparent 1px);
+background-size:var(--grid-size) var(--grid-size);
+opacity:var(--grid-opacity);
+}
+
+/* ---------- the drawing: stays put while the text scrolls (left ~two thirds) ---------- */
+.bpl-stage{
+position:fixed; top:0; left:0; width:64vw; height:100vh;
+padding:calc(var(--fade) + 3vh) 2vw 5vh 4vw; /* starts below the blend, where the blue is solid */
+transition:opacity .6s ease;
+}
+.bpl.js .bpl-stage{opacity:0}
+.bpl.js.active .bpl-stage{opacity:1}
+.bpl-art{width:100%; height:100%; display:flex; align-items:center; justify-content:center; will-change:filter,opacity}
+.bpl-art svg{display:block; width:100%; height:100%; max-height:88vh; overflow:visible}
+
+/* styling for the demo drawing only (your own SVG keeps its own line weights) */
+.bpl svg.demo path, .bpl svg.demo line, .bpl svg.demo rect, .bpl svg.demo circle,
+.bpl svg.demo polyline, .bpl svg.demo polygon{
+fill:none; stroke:var(--line); stroke-linecap:round; stroke-linejoin:round;
+}
+.bpl svg.demo .th>*{stroke-width:1}
+.bpl svg.demo .md>*{stroke-width:1.8}
+.bpl svg.demo .hv>*{stroke-width:3}
+.bpl svg.demo .ds>*{stroke-width:1; stroke-dasharray:12 5 2 5}
+.bpl svg.demo text{fill:var(--line); stroke:none; font:400 10px 'Lilex',ui-monospace,monospace; letter-spacing:.14em}
+
+/* ---------- the manifesto: the right-hand third ---------- */
+.bpl-text{
+position:relative; z-index:1;
+margin-left:67vw; width:min(28vw,520px);
+padding:calc(var(--fade) + 22vh) 0 calc(var(--fade-out) + 30vh);
+transition:opacity 1.4s ease .2s;
+}
+.bpl.js .bpl-text{opacity:0}
+.bpl.js.reveal .bpl-text{opacity:1}
+
+.bpl .bpl-label{
+display:flex; align-items:center; gap:12px; margin:0 0 56px;
+font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--mute);
+}
+.bpl .bpl-label::before{content:""; width:8px; height:8px; background:var(--white)}
+
+.bpl .bpl-block{
+min-height:62vh; display:flex; flex-direction:column; justify-content:center;
+padding:40px 0; border-top:1px solid rgba(255,255,255,.28);
+}
+.bpl .bpl-block .n{margin:0 0 18px; font-size:11px; letter-spacing:.2em; color:var(--mute)}
+.bpl .bpl-block h2{margin:0 0 18px; font-size:clamp(20px,2.2vw,30px); font-weight:500; letter-spacing:.02em; line-height:1.3; color:var(--white)}
+.bpl .bpl-block p{margin:0; max-width:46ch; font-size:14px; line-height:1.95; letter-spacing:.02em; color:rgba(255,255,255,.9)}
+
+.bpl-cue{display:none}
+
+/* ---------- phones: the drawing fills the screen; scrolling brings the text in over a blurred drawing ---------- */
+@media (max-width:820px){
+.bpl-stage{width:100vw; padding:calc(var(--fade) + 3vh) 5vw 7vh}
+/* --p goes 0 -> 1 as you scroll (set by the script below) */
+.bpl-art{filter:blur(calc(var(--p,0) * 7px)); opacity:calc(1 - var(--p,0) * .62)}
+.bpl-text{margin-left:0; width:auto; padding:100vh 24px calc(var(--fade-out) + 30vh)}
+.bpl .bpl-block{text-shadow:0 0 14px rgba(44,87,153,.95)}
+.bpl-cue{
+display:block; position:fixed; left:0; right:0; bottom:max(22px,env(safe-area-inset-bottom));
+text-align:center;
+font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:var(--mute);
+opacity:0; transition:opacity .3s ease;
+}
+.bpl.active.done .bpl-cue{opacity:calc(1 - var(--p,0) * 4)}
+}
+</style>
+
+<section class="bpl" id="bpl">
+
+<div class="bpl-clip" aria-hidden="true">
+<div class="bpl-grid"></div>
+
+<div class="bpl-stage">
+<div class="bpl-art">
+
+<!-- ======= DEMO DRAWING: replace this whole <svg> with your own ======= -->
+<svg id="bpl-svg" class="demo" viewBox="0 0 1000 760" preserveAspectRatio="xMidYMid meet">
+
+<!-- PLAN -->
+<g class="hv"><rect x="80" y="100" width="380" height="250"/></g>
+<g class="md">
+<rect x="90" y="110" width="360" height="230"/>
+<path d="M260 110 V212"/>
+<path d="M260 252 V340"/>
+<path d="M310 200 H450"/>
+<rect x="140" y="98" width="90" height="14"/>
+<rect x="300" y="338" width="100" height="14"/>
+</g>
+<g class="th">
+<line x1="140" y1="105" x2="230" y2="105"/>
+<line x1="300" y1="345" x2="400" y2="345"/>
+<path d="M260 212 A40 40 0 0 1 300 252"/>
+<path d="M260 252 H300"/>
+<rect x="330" y="122" width="100" height="28"/>
+<circle cx="345" cy="162" r="8"/>
+<circle cx="380" cy="162" r="8"/>
+<circle cx="415" cy="162" r="8"/>
+<rect x="110" y="250" width="80" height="70"/>
+<rect x="116" y="256" width="30" height="16"/>
+<rect x="152" y="256" width="30" height="16"/>
+<rect x="104" y="122" width="20" height="90"/>
+<rect x="420" y="210" width="22" height="120"/>
+<circle cx="431" cy="240" r="6"/>
+<circle cx="431" cy="262" r="6"/>
+</g>
+<g class="th">
+<line x1="80" y1="76" x2="460" y2="76"/>
+<line x1="80" y1="68" x2="80" y2="86"/>
+<line x1="460" y1="68" x2="460" y2="86"/>
+<line x1="56" y1="100" x2="56" y2="350"/>
+<line x1="48" y1="100" x2="64" y2="100"/>
+<line x1="48" y1="350" x2="64" y2="350"/>
+<circle cx="496" cy="225" r="11"/>
+<line x1="478" y1="225" x2="485" y2="225"/>
+<line x1="80" y1="394" x2="210" y2="394"/>
+</g>
+<g class="ds">
+<line x1="270" y1="90" x2="270" y2="372"/>
+<line x1="64" y1="225" x2="478" y2="225"/>
+</g>
+
+<!-- ELEVATION -->
+<g class="hv"><line x1="540" y1="350" x2="950" y2="350"/></g>
+<g class="md">
+<rect x="580" y="140" width="320" height="210"/>
+<rect x="570" y="128" width="340" height="12"/>
+<rect x="610" y="175" width="52" height="76"/>
+<rect x="690" y="175" width="52" height="76"/>
+<rect x="770" y="175" width="52" height="76"/>
+<rect x="850" y="248" width="34" height="102"/>
+</g>
+<g class="th">
+<line x1="636" y1="175" x2="636" y2="251"/>
+<line x1="716" y1="175" x2="716" y2="251"/>
+<line x1="796" y1="175" x2="796" y2="251"/>
+<line x1="610" y1="213" x2="662" y2="213"/>
+<line x1="690" y1="213" x2="742" y2="213"/>
+<line x1="770" y1="213" x2="822" y2="213"/>
+<path d="M556 350 l-12 12 M580 350 l-12 12 M604 350 l-12 12 M628 350 l-12 12 M652 350 l-12 12 M676 350 l-12 12 M700 350 l-12 12 M724 350 l-12 12 M748 350 l-12 12 M772 350 l-12 12 M796 350 l-12 12 M820 350 l-12 12 M844 350 l-12 12 M868 350 l-12 12 M892 350 l-12 12 M916 350 l-12 12 M940 350 l-12 12"/>
+<line x1="912" y1="140" x2="958" y2="140"/>
+<polyline points="924,140 932,128 940,140"/>
+<line x1="560" y1="394" x2="760" y2="394"/>
+</g>
+
+<!-- SECTION -->
+<g class="hv"><line x1="60" y1="640" x2="480" y2="640"/></g>
+<g class="md">
+<rect x="90" y="448" width="12" height="192"/>
+<rect x="440" y="448" width="12" height="192"/>
+<rect x="80" y="436" width="382" height="12"/>
+<rect x="102" y="540" width="338" height="10"/>
+<polyline points="130,640 130,620 150,620 150,600 170,600 170,580 190,580 190,560 210,560 210,540"/>
+</g>
+<g class="th">
+<path d="M90 640 l-12 12 M120 640 l-12 12 M150 640 l-12 12 M180 640 l-12 12 M210 640 l-12 12 M240 640 l-12 12 M270 640 l-12 12 M300 640 l-12 12 M330 640 l-12 12 M360 640 l-12 12 M390 640 l-12 12 M420 640 l-12 12 M450 640 l-12 12"/>
+<line x1="500" y1="436" x2="500" y2="640"/>
+<line x1="492" y1="436" x2="508" y2="436"/>
+<line x1="492" y1="640" x2="508" y2="640"/>
+<line x1="440" y1="480" x2="452" y2="480"/>
+<line x1="440" y1="520" x2="452" y2="520"/>
+<line x1="80" y1="682" x2="230" y2="682"/>
+</g>
+
+<!-- DETAIL -->
+<g class="md">
+<rect x="560" y="450" width="44" height="170"/>
+<rect x="604" y="500" width="14" height="70"/>
+<rect x="618" y="505" width="6" height="60"/>
+</g>
+<g class="th">
+<path d="M560 494 L604 450 M560 516 L604 472 M560 538 L604 494 M560 560 L604 516 M560 582 L604 538 M560 604 L604 560 M560 620 L604 576"/>
+<path d="M618 535 L664 490 H700"/>
+<line x1="540" y1="682" x2="660" y2="682"/>
+</g>
+
+<!-- NORTH ARROW + SCALE -->
+<g class="th">
+<circle cx="890" cy="520" r="34"/>
+<line x1="890" y1="486" x2="890" y2="554"/>
+<line x1="760" y1="606" x2="940" y2="606"/>
+<line x1="760" y1="600" x2="760" y2="612"/>
+<line x1="805" y1="600" x2="805" y2="612"/>
+<line x1="850" y1="600" x2="850" y2="612"/>
+<line x1="895" y1="600" x2="895" y2="612"/>
+<line x1="940" y1="600" x2="940" y2="612"/>
+</g>
+<g class="md"><polygon points="890,486 880,520 890,514 900,520"/></g>
+
+<!-- TITLE BLOCK -->
+<g class="th">
+<rect x="700" y="656" width="266" height="70"/>
+<line x1="700" y1="684" x2="966" y2="684"/>
+<line x1="860" y1="684" x2="860" y2="726"/>
+</g>
+
+<!-- LABELS (these fade in once the lines are finished) -->
+<text x="270" y="70" text-anchor="middle">7600</text>
+<text transform="rotate(-90 46 225)" x="46" y="225" text-anchor="middle">5000</text>
+<text x="496" y="229" text-anchor="middle">A</text>
+<text x="80" y="388">PLAN — 1:100</text>
+<text x="560" y="388">ELEVATION SOUTH — 1:100</text>
+<text x="958" y="120" text-anchor="end">+3.200</text>
+<text x="80" y="674">SECTION A–A — 1:100</text>
+<text transform="rotate(-90 518 538)" x="518" y="538" text-anchor="middle">3600</text>
+<text x="540" y="674">DETAIL D1 — 1:5</text>
+<text x="704" y="494">D1 — WINDOW JAMB</text>
+<text x="890" y="476" text-anchor="middle">N</text>
+<text x="760" y="630">0 — 4 M</text>
+<text x="712" y="676">SHEET 01 / 04</text>
+<text x="712" y="708">PLAN · ELEV · SECT</text>
+<text x="872" y="676">REV A</text>
+<text x="872" y="708">INDEX</text>
+</svg>
+<!-- ======= END OF DEMO DRAWING ======= -->
+
+</div>
+</div>
+
+<div class="bpl-cue">Scroll</div>
+</div>
+
+<div class="bpl-text">
+<p class="bpl-label">Manifesto</p>
+
+<div class="bpl-block">
+<p class="n">01</p>
+<h2>[ First statement goes here ]</h2>
+<p>[ Replace this with your manifesto text. Each block is a screen of reading while the drawing stays fixed on the left. ]</p>
+</div>
+<div class="bpl-block">
+<p class="n">02</p>
+<h2>[ Second statement ]</h2>
+<p>[ Placeholder text. Add or remove blocks freely; the section simply gets longer or shorter. ]</p>
+</div>
+<div class="bpl-block">
+<p class="n">03</p>
+<h2>[ Third statement ]</h2>
+<p>[ Placeholder text. ]</p>
+</div>
+<div class="bpl-block">
+<p class="n">04</p>
+<h2>[ Fourth statement ]</h2>
+<p>[ Placeholder text. ]</p>
+</div>
+</div>
+
+</section>
+
+<script>
+(function () {
+var root = document.getElementById('bpl');
+if (!root) return;
+
+// Safety net: if anything below fails, show everything normally instead of a blank section.
+try {
+var svg = root.querySelector('#bpl-svg');
+if (!svg) return;
+root.classList.add('js');
+
+/* ---------- settings ---------- */
+var SPEED = 700; // drawing speed, in drawing units per second (higher = faster)
+var MAX_DRAW = 16; // the whole drawing always finishes within about this many seconds
+var GAP = 0.06; // pause between strokes (seconds)
+var MIN_STROKE = 0.14; // shortest time one stroke may take (seconds)
+var RECOLOUR = true; // repaint all lines/text in --line so any export matches the palette
+var TRIGGER = 0.12; // start drawing when the section's top edge reaches this far down the screen (0 = very top)
+
+var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function usable(el) { return !el.closest('defs,clipPath,mask,pattern,symbol,marker'); }
+
+var shapes = [].slice.call(svg.querySelectorAll('path,line,polyline,polygon,rect,circle,ellipse')).filter(usable);
+var texts = [].slice.call(svg.querySelectorAll('text')).filter(usable);
+
+// classify every element once, before we touch its styling
+var items = shapes.map(function (el) {
+var cs = getComputedStyle(el);
+var stroked = cs.stroke !== 'none' && parseFloat(cs.strokeWidth) > 0;
+var filled = cs.fill !== 'none' && cs.fill !== 'transparent' && cs.fill !== 'rgba(0, 0, 0, 0)';
+var dashed = cs.strokeDasharray && cs.strokeDasharray !== 'none';
+var len = 0;
+try { len = el.getTotalLength(); } catch (e) {}
+// plain lines are DRAWN; dashed lines and filled shapes simply fade in
+var mode = (stroked && !dashed && !filled && len > 0) ? 'draw' : 'fade';
+
+if (RECOLOUR) {
+if (stroked) el.style.setProperty('stroke', 'var(--line)', 'important');
+if (filled && cs.fill.indexOf('url') !== 0) el.style.setProperty('fill', 'var(--line)', 'important');
+}
+return { el: el, len: len, mode: mode };
+});
+
+if (RECOLOUR) {
+texts.forEach(function (t) {
+t.style.setProperty('fill', 'var(--line)', 'important');
+t.style.setProperty('stroke', 'none', 'important');
+});
+}
+
+/* ---------- the animation ---------- */
+var anims = [], timers = [];
+
+function stop() {
+anims.forEach(function (a) { a.cancel(); });
